@@ -1,0 +1,24 @@
+﻿@page "/selecttableitem/{Database}"
+@inject DataAccess DataAccess
+@inject NavigationManager NavigationManager
+
+<MudText Typo="Typo.h5">Select Table</MudText>
+
+<DynamicItemTable @ref="tableItemTable" IsVisible="true" TItem="TableItemModel" Data="@tableItemTableData" OnItemChooseButtonClick="SelectTable"></DynamicItemTable>
+
+@code {
+    [Parameter]
+    public string Database { get; set; }
+
+    private DynamicItemTable<TableItemModel> tableItemTable;
+
+    private List<TableItemModel> tableItemTableData => DataAccess
+        .LoadData("show tables", DataAccess.GenerateConnectionString(Database))
+        .ConvertAll(x => new TableItemModel(x.First().ToString()));
+
+
+    public void SelectTable(TableItemModel tableItem)
+    {
+        NavigationManager.NavigateTo($"/printtableinfo/{Database}/{tableItem.Name}");
+    }
+}

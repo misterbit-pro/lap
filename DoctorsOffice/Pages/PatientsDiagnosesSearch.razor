@@ -1,0 +1,108 @@
+﻿@page "/patientsdiagnosessearch"
+@using Microsoft.EntityFrameworkCore
+@inject DoctorsOfficeContext Context
+
+<MudText Typo="Typo.h3">Patients diagnoses - Search</MudText>
+
+@if (isSearchFormVisible)
+{
+    <div style="max-width: 400px;">
+        <MudCard>
+            <MudCardContent>
+                <MudForm>
+                    <MudTextField T="int?" Label="Patient id" @bind-Text="@searchedId" />
+                    <MudItem xs="12" md="3">
+                        <MudText Typo="Typo.caption">Time frame</MudText>
+                        <MudRadioGroup T="string" @bind-SelectedOption="@selectedOption" Required="true" RequiredError="Time frame is required!">
+                            <MudRadio Option="@("CurrentMonth")">Current month</MudRadio>
+                            <MudRadio Option="@("LastMonth")">Last month</MudRadio>
+                            <MudRadio Option="@("Everything")">Everything</MudRadio>
+                        </MudRadioGroup>
+                    </MudItem>
+                </MudForm>
+            </MudCardContent>
+        </MudCard>
+
+        <MudPaper Class="pa-4 justify-center my-4 mud-text-align-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Search">Search</MudButton>
+            @*<MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="Reset" Class="mx-2">Reset</MudButton>*@
+        </MudPaper>
+    </div>
+}
+
+<DynamicSearchResult @ref="searchResult" TItem="PatientsDiagnosesModel" Data="@data"></DynamicSearchResult>
+
+@if (error != null)
+{
+    <MudText Color="@Color.Error">@error</MudText>
+}
+
+@code {
+    private bool isSearchFormVisible = true;
+    private string searchedId;
+    private string selectedOption = "Everything";
+
+    private DynamicSearchResult<PatientsDiagnosesModel> searchResult;
+    private List<PatientsDiagnosesModel> data;
+
+    private string error;
+
+
+    public void Search()
+    {
+        var entity = Context
+            .Patients
+            .Include(x => x.Patientsdiagnoses)
+            .ThenInclude(x => x.Dia)
+            .ThenInclude(x => x.Dis)
+            .FirstOrDefault(x => x.PatId == int.Parse(searchedId));
+
+
+
+        data = new List<PatientsDiagnosesModel>();
+        if (entity != null)
+        {
+            List<Patientsdiagnoses> patientsDiagnoses = null;
+
+            if (selectedOption != "Everything")
+            {
+                switch (selectedOption)
+                {
+                    case "LastMonth":
+                    {
+                        patientsDiagnoses = entity.Patientsdiagnoses.Where(x => x.PatdiaVisit.Month == DateTime.Now.Month - 1).ToList();
+                        break;
+                    }
+                    case "CurrentMonth":
+                    {
+                        patientsDiagnoses = entity.Patientsdiagnoses.Where(x => x.PatdiaVisit.Month == DateTime.Now.Month).ToList();
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                patientsDiagnoses = entity.Patientsdiagnoses.ToList();
+            }
+
+            foreach (var item in patientsDiagnoses)
+            {
+                data.Add(new PatientsDiagnosesModel(string.Join(' ', entity.PatFirstName, entity.PatLastName), item.Dia.Dis.DisName, item.Dia.DiaDescription, item.PatdiaVisit));
+            }
+
+            isSearchFormVisible = false;
+            searchResult.Show();
+        }
+        else
+        {
+            error = "Production company not found!";
+        }
+    }
+
+    ////public void Reset()
+    ////{
+    ////    searchedId = null;
+    ////    data.Clear();
+    ////    error = null;
+    ////}
+}

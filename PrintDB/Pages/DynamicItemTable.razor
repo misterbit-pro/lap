@@ -1,0 +1,70 @@
+﻿@using System.Reflection
+@typeparam TItem
+
+@if (isVisible)
+{
+    <MudSimpleTable>
+        <thead>
+            <tr>
+                @foreach (var column in columns)
+                {
+                    <th>@column.Name</th>
+                }
+                @if (OnItemChooseButtonClick != null)
+                {
+                    <th></th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Data)
+            {
+                <tr>
+                    @foreach (var column in columns)
+                    {
+                        <td>@column.GetValue(item)</td>
+                    }
+                    @if (OnItemChooseButtonClick != null)
+                    {
+                        <td><MudButton Variant="Variant.Filled" OnClick="() => OnItemChooseButtonClick(item)">Choose</MudButton></td>
+                    }
+
+                </tr>
+            }
+        </tbody>
+    </MudSimpleTable>
+}
+
+
+@code {
+    [Parameter]
+    public IList<TItem> Data { get; set; }
+
+    [Parameter]
+    public Action<TItem> OnItemChooseButtonClick { get; set; }
+
+    [Parameter]
+    public bool IsVisible { get => isVisible; set => isVisible = value; }
+
+    private bool isVisible;
+
+    private IList<PropertyInfo> columns;
+
+    public void Show()
+    {
+        isVisible = true;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        isVisible = false;
+    }
+
+    protected override void OnInitialized()
+    {
+        columns = typeof(TItem)
+            .GetProperties()
+            .ToList();
+    }
+}

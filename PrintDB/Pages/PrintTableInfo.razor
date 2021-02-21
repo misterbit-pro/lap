@@ -1,0 +1,21 @@
+﻿@page "/printtableinfo/{Database}/{Table}"
+@inject DataAccess DataAccess
+
+<MudText Typo="Typo.h5">Table Information</MudText>
+
+<DynamicItemTable @ref="tableInfoTable" IsVisible="true" TItem="TableInfoModel" Data="@tableInfoTableData"></DynamicItemTable>
+
+@code {
+
+    [Parameter]
+    public string Database { get; set; }
+
+    [Parameter]
+    public string Table { get; set; }
+
+    private DynamicItemTable<TableInfoModel> tableInfoTable;
+
+    private List<TableInfoModel> tableInfoTableData => DataAccess
+        .LoadData($"desc {Table}", DataAccess.GenerateConnectionString(Database))
+        .ConvertAll(x => Activator.CreateInstance(typeof(TableInfoModel), x.ToList().ConvertAll(y => y.ToString()).ToArray()) as TableInfoModel);
+}

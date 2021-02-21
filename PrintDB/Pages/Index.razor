@@ -1,0 +1,23 @@
+﻿@page "/"
+@inject DataAccess DataAccess
+@inject NavigationManager NavigationManager
+
+<MudText Typo="Typo.h5">Select Database</MudText>
+
+<DynamicItemTable @ref="dbItemTable" IsVisible="true" TItem="DbItemModel" Data="@DbItemTableData" OnItemChooseButtonClick="SelectDatabase"></DynamicItemTable>
+
+@code
+{
+    private DynamicItemTable<DbItemModel> dbItemTable;
+    private static List<DbItemModel> DbItemTableData
+        => DataAccess
+            .LoadData("show databases", DataAccess.GenerateConnectionString())
+            .ConvertAll(x => new DbItemModel(x.First().ToString()));
+
+    
+    public void SelectDatabase(DbItemModel dbItem)
+    {
+        NavigationManager.NavigateTo($"/selecttableitem/{dbItem.Name}");
+    }
+}
+

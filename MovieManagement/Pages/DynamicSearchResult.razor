@@ -1,0 +1,62 @@
+﻿@using System.Reflection
+@typeparam TItem
+
+@if (show)
+{
+    <MudText Typo="Typo.h5">Search results</MudText>
+
+    <MudSimpleTable>
+        <thead>
+            <tr>
+                @foreach (var column in columns)
+                {
+                    <th>@column.Name</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Data)
+            {
+                <tr>
+                    @foreach (var column in columns)
+                    {
+                        <td>@column.GetValue(item)</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </MudSimpleTable>
+}
+
+
+@code {
+    [Parameter]
+    public IList<TItem> Data { get; set; }
+
+    [Parameter]
+    public string UserInput { get; set; }
+
+    [Parameter]
+    public string FoundEntity { get; set; }
+
+    private IList<PropertyInfo> columns;
+
+    private bool show;
+
+    public void Show()
+    {
+        show = true;
+    }
+
+    public void Hide()
+    {
+        show = false;
+    }
+
+    protected override void OnInitialized()
+    {
+        columns = typeof(TItem)
+            .GetProperties()
+            .ToList();
+    }
+}

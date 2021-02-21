@@ -1,0 +1,127 @@
+﻿@page "/addpatient"
+@inject DoctorsOfficeContext Context
+
+<MudText Typo="Typo.h3">Add Patient</MudText>
+
+@if (isFromVisible)
+{
+    <div style="max-width: 400px;">
+        <MudCard>
+            <MudCardContent>
+                <MudForm @bind-IsValid="@success">
+                    <MudTextField T="int?" Label="Sv Number" @bind-Text="@svNumberString" Validation="@(new Func<int?, string>(IsSvNumberValid))" />
+                    <MudDatePicker @ref="@birthdayPicker" Editable="true" Label="Birtday" Required="true" Validation="@(new Func<DateTime?, string>(IsBirthdayValid))" />
+                    <MudTextField T="string" Label="First Name" @bind-Text="@firstName" Required="true" RequiredError="First Name is required!" />
+                    <MudTextField T="string" Label="Last Name" @bind-Text="@lastName" Required="true" RequiredError="Last Name is required!" />
+                </MudForm>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!success)" Class="ml-auto" OnClick="OnSaveButtonClick">Save</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </div>
+}
+
+@if (isMessageTextVisible)
+{
+    <MudText Typo="Typo.body1" @bind-Color="@messageTextColor">@messageText</MudText>
+}
+
+@if (isReturnButtonVisible)
+{
+    <MudButton Variant="Variant.Outlined" OnClick="OnReturnButtonClick">Return</MudButton>
+}
+
+
+@code {
+    private bool isFromVisible = true;
+
+    private bool success;
+    private string svNumberString;
+    private MudDatePicker birthdayPicker;
+    private string firstName;
+    private string lastName;
+
+    private bool isMessageTextVisible;
+    private string messageText;
+    private Color messageTextColor;
+
+    private bool isReturnButtonVisible;
+
+    private string IsSvNumberValid(int? svNumber)
+    {
+        if (svNumber != null && svNumber.Value.ToString().Length != 4)
+        {
+            return "The Sv Number has to be 4 characters long";
+        }
+        return null;
+    }
+
+    private string IsBirthdayValid(DateTime? birthday)
+    {
+        if (!birthday.HasValue)
+        {
+            return "Birthday is Required!";
+        }
+        if (birthday.Value > DateTime.Now)
+        {
+            return "Birthday cannot be in the future!";
+        }
+        if (birthday.Value.Year < DateTime.Now.Year - 120)
+        {
+            return "Patient cannot be older than 120 years!";
+        }
+
+        // Is Required otherwise IsValid of form is false
+        Task.Delay(1000).ContinueWith(task => birthdayPicker.Validate());
+
+        return null;
+    }
+
+    private void OnSaveButtonClick()
+    {
+        isFromVisible = false;
+        isMessageTextVisible = true;
+
+        DateTime birthday = birthdayPicker.Date.Value;
+
+        // If a patient with the same birthday and svnr combination already exists
+        if (Context.Patients
+            .Any(x =>
+                x.PatBirthday == birthdayPicker.Date.Value &&
+                (svNumberString == null || x.PatSvnr == long.Parse(svNumberString))))
+        {
+            messageTextColor = Color.Error;
+            messageText = $"A patient with the birthday {birthday.ToLongDateString()} and {long.Parse(svNumberString)} already exists";
+            isReturnButtonVisible = true;
+        }
+        else
+        {
+            var newEntity = new Patients
+            {
+                PatBirthday = birthday,
+                PatFirstName = firstName,
+                PatLastName = lastName
+            };
+
+            if (svNumberString != null)
+            {
+                newEntity.PatSvnr = long.Parse(svNumberString);
+            }
+
+            Context.Patients.Add(newEntity);
+            Context.SaveChanges();
+
+            messageTextColor = Color.Default;
+            messageText = "The new patient was saved!";
+        }
+    }
+
+    private void OnReturnButtonClick()
+    {
+        isFromVisible = true;
+        isMessageTextVisible = false;
+        isReturnButtonVisible = false;
+    }
+
+}

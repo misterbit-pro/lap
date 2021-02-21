@@ -1,0 +1,56 @@
+﻿@using System.Reflection
+@typeparam TItem
+
+@if (isVisible)
+{
+    <MudText Typo="Typo.h5">Search results</MudText>
+
+    <MudSimpleTable>
+        <thead>
+            <tr>
+                @foreach (var column in columns)
+                {
+                    <th>@column.Name</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Data)
+            {
+                <tr>
+                    @foreach (var column in columns)
+                    {
+                        <td>@column.GetValue(item)</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </MudSimpleTable>
+}
+
+
+@code {
+    [Parameter]
+    public IList<TItem> Data { get; set; }
+
+    private IList<PropertyInfo> columns;
+
+    private bool isVisible;
+
+    public void Show()
+    {
+        isVisible = true;
+    }
+
+    public void Hide()
+    {
+        isVisible = false;
+    }
+
+    protected override void OnInitialized()
+    {
+        columns = typeof(TItem)
+            .GetProperties()
+            .ToList();
+    }
+}
